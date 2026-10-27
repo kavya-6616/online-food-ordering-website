@@ -1,0 +1,241 @@
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foodie - Online Food Ordering</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #fffaf5;
+  color: #292524;
+}
+header {
+  background: #f97316;
+  color: white;
+  padding: 20px 7%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+header h1 { margin: 0; }
+header span { font-weight: bold; }
+.hero {
+  text-align: center;
+  padding: 35px 15px;
+  background: #ffedd5;
+}
+.hero h2 { font-size: 32px; margin-bottom: 8px; }
+.container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+  padding: 25px 7%;
+}
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.food-card, .cart {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 12px #00000010;
+}
+.food-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.food-card h3 { margin-bottom: 8px; }
+.price { color: #ea580c; font-weight: bold; }
+button {
+  border: none;
+  border-radius: 7px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #f97316;
+  color: white;
+  font-weight: bold;
+}
+button:hover { background: #c2410c; }
+.cart { align-self: start; position: sticky; top: 15px; }
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+.qty button { padding: 5px 9px; }
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+}
+.checkout { width: 100%; }
+#message { color: #15803d; font-weight: bold; }
+footer {
+  text-align: center;
+  padding: 20px;
+  background: #292524;
+  color: white;
+}
+@media(max-width: 750px) {
+  .container { grid-template-columns: 1fr; padding: 20px; }
+  .food-grid { grid-template-columns: 1fr; }
+  .cart { position: static; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍽️ Foodie</h1>
+  <span>🛒 Cart: <b id="cart-count">0</b></span>
+</header>
+
+<section class="hero">
+  <h2>Delicious Food, Delivered Fresh!</h2>
+  <p>Choose your favourite food and order online.</p>
+</section>
+
+<main class="container">
+  <section>
+    <h2>Our Menu</h2>
+    <div class="food-grid" id="food-list"></div>
+  </section>
+
+  <aside class="cart">
+    <h2>Order Summary</h2>
+    <div id="cart-items">Your cart is empty.</div>
+    <div class="summary">
+      <span>Subtotal</span><b id="subtotal">₹0</b>
+    </div>
+    <div class="summary">
+      <span>Delivery Fee</span><b id="delivery">₹0</b>
+    </div>
+    <hr>
+    <div class="summary">
+      <strong>Total</strong><strong id="total">₹0</strong>
+    </div>
+    <button class="checkout" onclick="placeOrder()">Place Order</button>
+    <p id="message"></p>
+  </aside>
+</main>
+
+<footer>
+  <p>© 2026 Foodie | Online Food Ordering Website</p>
+</footer>
+
+<script>
+const foods = [
+  {
+    id: 1, name: "Chicken Biryani", price: 220,
+    image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=500"
+  },
+  {
+    id: 2, name: "Pizza", price: 250,
+    image: "https://images.unsplash.com/photo- pizza"
+      .replace("images.unsplash.com/photo- pizza", "images.unsplash.com/photo-1513104890138-7c749659a591?w=500")
+  },
+  {
+    id: 3, name: "Burger", price: 120,
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500"
+  },
+  {
+    id: 4, name: "French Fries", price: 90,
+    image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500"
+  },
+  {
+    id: 5, name: "Dosa", price: 80,
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=500"
+  },
+  {
+    id: 6, name: "Ice Cream", price: 70,
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500"
+  }
+];
+
+let cart = {};
+
+const money = amount => "₹" + amount.toLocaleString("en-IN");
+
+function renderFoods() {
+  document.getElementById("food-list").innerHTML = foods.map(food => `
+    <article class="food-card">
+      <img src="${food.image}" alt="${food.name}"
+           onerror="this.style.display='none'">
+      <h3>${food.name}</h3>
+      <p class="price">${money(food.price)}</p>
+      <button onclick="addToCart(${food.id})">Add to Cart +</button>
+    </article>
+  `).join("");
+}
+
+function addToCart(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  renderCart();
+}
+
+function changeQty(id, amount) {
+  cart[id] = (cart[id] || 0) + amount;
+  if (cart[id] <= 0) delete cart[id];
+  renderCart();
+}
+
+function renderCart() {
+  const entries = Object.entries(cart);
+  const count = entries.reduce((sum, [, qty]) => sum + qty, 0);
+  const subtotal = entries.reduce((sum, [id, qty]) =>
+    sum + foods.find(f => f.id === Number(id)).price * qty, 0);
+  const delivery = count > 0 ? 30 : 0;
+
+  document.getElementById("cart-count").textContent = count;
+  document.getElementById("subtotal").textContent = money(subtotal);
+  document.getElementById("delivery").textContent = money(delivery);
+  document.getElementById("total").textContent = money(subtotal + delivery);
+
+  document.getElementById("cart-items").innerHTML = entries.length
+    ? entries.map(([id, qty]) => {
+        const food = foods.find(f => f.id === Number(id));
+        return `<div class="cart-item">
+          <div><b>${food.name}</b><br>${money(food.price * qty)}</div>
+          <div class="qty">
+            <button onclick="changeQty(${id},-1)">−</button>
+            ${qty}
+            <button onclick="changeQty(${id},1)">+</button>
+          </div>
+        </div>`;
+      }).join("")
+    : "Your cart is empty.";
+
+  document.getElementById("message").textContent = "";
+}
+
+function placeOrder() {
+  if (Object.keys(cart).length === 0) {
+    document.getElementById("message").textContent =
+      "Please add food items first.";
+    return;
+  }
+
+  document.getElementById("message").textContent =
+    "Order placed successfully! Thank you for ordering.";
+  cart = {};
+  renderCart();
+}
+
+renderFoods();
+renderCart();
+</script>
+</body>
+</html>
